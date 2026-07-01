@@ -1,6 +1,16 @@
-
 import re
+from enum import Enum
+
 from textnode import TextNode, TextType
+
+
+class BlockType(Enum):
+    PARAGRAPH = "paragraph"
+    HEADING = "heading"
+    CODE = "code"
+    QUOTE = "quote"
+    UNORDERED_LIST = "unordered_list"
+    ORDERED_LIST = "ordered_list"
 
 
 def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: TextType) -> list[TextNode]:
@@ -10,7 +20,7 @@ def split_nodes_delimiter(old_nodes: list[TextNode], delimiter: str, text_type: 
             results.append(node)
             continue
         parts = node.text.split(delimiter)
-        if (len(parts) % 2 == 0):
+        if len(parts) % 2 == 0:
             raise ValueError("invalid markdown, delimiter not closed")
         for i, part in enumerate(parts):
             if not part:
@@ -33,7 +43,7 @@ def split_nodes_image(old_nodes: list[TextNode]) -> list[TextNode]:
         remaining_text = node.text
         for anchor, url in image_links:
             parts = remaining_text.split(f"![{anchor}]({url})", 1)
-            if (len(parts) < 2):
+            if len(parts) < 2:
                 raise ValueError("Cannot split on image link")
             if parts[0]:
                 results.append(TextNode(parts[0], TextType.PLAIN))
@@ -54,7 +64,7 @@ def split_nodes_link(old_nodes: list[TextNode]) -> list[TextNode]:
         remaining_text = node.text
         for anchor, url in links:
             parts = remaining_text.split(f"[{anchor}]({url})", 1)
-            if (len(parts) < 2):
+            if len(parts) < 2:
                 raise ValueError("Cannot split on link")
             if parts[0]:
                 results.append(TextNode(parts[0], TextType.PLAIN))
@@ -65,7 +75,7 @@ def split_nodes_link(old_nodes: list[TextNode]) -> list[TextNode]:
     return results
 
 
-def text_to_textnodes(text) -> list[TextNode]:
+def text_to_textnodes(text: str) -> list[TextNode]:
     nodes = [TextNode(text, TextType.PLAIN)]
     nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)
     nodes = split_nodes_delimiter(nodes, "_", TextType.ITALIC)
@@ -73,6 +83,46 @@ def text_to_textnodes(text) -> list[TextNode]:
     nodes = split_nodes_image(nodes)
     nodes = split_nodes_link(nodes)
     return nodes
+
+
+def markdown_to_blocks(markdown: str) -> list[str]:
+    return [b.strip() for b in markdown.split("\n\n")]
+
+
+def block_to_block_type(block: str) -> BlockType:
+    # [\s\S] means match all including new lines
+    if re.match(r"^#{1,6} .*$", block):
+        return BlockType.HEADING
+    if re.match(r"^```\n[\s\S]*```$", block):
+        return BlockType.CODE
+
+    lines = block.split("\n")
+
+    def is_quote():
+        for line in lines:
+            if not re.match(r"^>", line):
+                return False
+        return True
+
+    def is_unordered_list():
+        for line in lines:
+            if not re.match(r"^- ", line):
+                return False
+        return True
+
+    def is_ordered_list():
+        for i, line in enumerate(lines):
+            if not re.match(rf"^{i+1}\. ", line):
+                return False
+        return True
+
+    if (is_quote()):
+        return BlockType.QUOTE
+    if (is_unordered_list()):
+        return BlockType.UNORDERED_LIST
+    if (is_ordered_list()):
+        return BlockType.ORDERED_LIST
+    return BlockType.PARAGRAPH
 
 
 def extract_markdown_images(text):
