@@ -65,6 +65,16 @@ def split_nodes_link(old_nodes: list[TextNode]) -> list[TextNode]:
     return results
 
 
+def text_to_textnodes(text) -> list[TextNode]:
+    nodes = [TextNode(text, TextType.PLAIN)]
+    nodes = split_nodes_delimiter(nodes, "**", TextType.BOLD)
+    nodes = split_nodes_delimiter(nodes, "_", TextType.ITALIC)
+    nodes = split_nodes_delimiter(nodes, "`", TextType.CODE)
+    nodes = split_nodes_image(nodes)
+    nodes = split_nodes_link(nodes)
+    return nodes
+
+
 def extract_markdown_images(text):
     # example: ![rick roll](https://i.imgur.com/aKaOqIh.gif)
     # pattern = r"!\[(.+?)\]\((.+?)\)" # my first attempt

@@ -2,7 +2,8 @@
 import unittest
 
 from textnode import TextNode, TextType
-from markdown_helper import split_nodes_delimiter, extract_markdown_images, extract_markdown_links, split_nodes_image, split_nodes_link
+from markdown_helper import split_nodes_delimiter, extract_markdown_images, extract_markdown_links, \
+    split_nodes_image, split_nodes_link, text_to_textnodes
 
 
 class TestMarkdown(unittest.TestCase):
@@ -235,5 +236,61 @@ class TestMarkdown(unittest.TestCase):
         compare_nodes = [
             TextNode("to boot dev", TextType.LINK, "https://www.boot.dev"),
             TextNode("image", TextType.IMAGE, "https://i.imgur.com/zjjcJKZ.png"),
+        ]
+        self.assertEqual(new_nodes, compare_nodes)
+
+    def test_text_to_nodes1(self):
+        text = "This is **text** with an _italic_ word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        new_nodes = text_to_textnodes(text)
+        compare_nodes = [
+            TextNode("This is ", TextType.PLAIN),
+            TextNode("text", TextType.BOLD),
+            TextNode(" with an ", TextType.PLAIN),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" word and a ", TextType.PLAIN),
+            TextNode("code block", TextType.CODE),
+            TextNode(" and an ", TextType.PLAIN),
+            TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+            TextNode(" and a ", TextType.PLAIN),
+            TextNode("link", TextType.LINK, "https://boot.dev"),
+        ]
+        self.assertEqual(new_nodes, compare_nodes)
+
+    def test_text_to_nodes2(self):
+        text = "This is **text** with an _italic_ word and a `code block` and more **bold** and more _italic_ and more `code` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+        new_nodes = text_to_textnodes(text)
+        compare_nodes = [
+            TextNode("This is ", TextType.PLAIN),
+            TextNode("text", TextType.BOLD),
+            TextNode(" with an ", TextType.PLAIN),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" word and a ", TextType.PLAIN),
+            TextNode("code block", TextType.CODE),
+            TextNode(" and more ", TextType.PLAIN),
+            TextNode("bold", TextType.BOLD),
+            TextNode(" and more ", TextType.PLAIN),
+            TextNode("italic", TextType.ITALIC),
+            TextNode(" and more ", TextType.PLAIN),
+            TextNode("code", TextType.CODE),
+            TextNode(" and an ", TextType.PLAIN),
+            TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+            TextNode(" and a ", TextType.PLAIN),
+            TextNode("link", TextType.LINK, "https://boot.dev"),
+        ]
+        self.assertEqual(new_nodes, compare_nodes)
+
+    def test_text_to_nodes3(self):
+        text = "_Here_ we have **two** of the same images: ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg). `Isn't that cool?`"
+        new_nodes = text_to_textnodes(text)
+        compare_nodes = [
+            TextNode("Here", TextType.ITALIC),
+            TextNode(" we have ", TextType.PLAIN),
+            TextNode("two", TextType.BOLD),
+            TextNode(" of the same images: ", TextType.PLAIN),
+            TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+            TextNode(" and a ", TextType.PLAIN),
+            TextNode("obi wan image", TextType.IMAGE, "https://i.imgur.com/fJRm4Vk.jpeg"),
+            TextNode(". ", TextType.PLAIN),
+            TextNode("Isn't that cool?", TextType.CODE),
         ]
         self.assertEqual(new_nodes, compare_nodes)
