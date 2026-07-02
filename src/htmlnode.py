@@ -24,6 +24,9 @@ class HTMLNode:
     def __repr__(self):
         return f"tag: {self.tag}, value: {self.value}, children: {self.children}, props: {self.props}"
 
+    def __eq__(self, o):
+        return self.tag == o.tag and self.value == o.value and self.children == o.children and self.props == o.props
+
 
 class LeafNode(HTMLNode):
     def __init__(self, tag: str | None, value: str, props: dict | None = None):

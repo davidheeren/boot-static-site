@@ -10,8 +10,10 @@ from markdown_helper import (
     text_to_textnodes,
     BlockType,
     block_to_block_type,
+    markdown_to_html_node
 )
 from textnode import TextNode, TextType
+from htmlnode import ParentNode, LeafNode
 
 
 class TestMarkdown(unittest.TestCase):
@@ -500,3 +502,43 @@ This is the same paragraph on a new line
         block = "1. ol\n3. ol 2\n3. ol 3"
         block_type = block_to_block_type(block)
         self.assertEqual(block_type, BlockType.PARAGRAPH)
+
+    def test_markdown_to_html_nodes1(self):
+        markdown = '''
+This is a **bolded** paragraph
+and this is _too_.
+'''
+        node = markdown_to_html_node(markdown)
+        compare_html = "<div><p>This is a <b>bolded</b> paragraph and this is <i>too</i>.</p></div>"
+        compare_node = ParentNode("div", [
+            ParentNode("p", [
+                    LeafNode(None, "This is a "),
+                    LeafNode("b", "bolded"),
+                    LeafNode(None, " paragraph and this is "),
+                    LeafNode("i", "too"),
+                    LeafNode(None, "."),
+                ])
+        ])
+        self.assertEqual(node.to_html(), compare_html)
+        self.assertEqual(node, compare_node)
+
+    def test_markdown_to_html_nodes2(self):
+        markdown = '''
+### This is a heading of 3
+
+And this is a ```code``` paragraph
+'''
+        node = markdown_to_html_node(markdown)
+        compare_html = "<div><h3>This is a heading of 3</h3><p>And this is a <code>code</code> paragraph</p></div>"
+        compare_node = ParentNode("div", [
+            ParentNode("h3", [
+                    LeafNode(None, "This is a heading of 3"),
+                ]),
+            ParentNode("p", [
+                    LeafNode(None, "And this is a "),
+                    LeafNode("code", "code"),
+                    LeafNode(None, " paragraph"),
+                ])
+        ])
+        self.assertEqual(node.to_html(), compare_html)
+        self.assertEqual(node, compare_node)

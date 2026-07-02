@@ -1,7 +1,8 @@
 import re
 from enum import Enum
 
-from textnode import TextNode, TextType
+from textnode import TextNode, TextType, text_node_to_html_node
+from htmlnode import HTMLNode, ParentNode, LeafNode
 
 
 class BlockType(Enum):
@@ -123,6 +124,33 @@ def block_to_block_type(block: str) -> BlockType:
     if (is_ordered_list()):
         return BlockType.ORDERED_LIST
     return BlockType.PARAGRAPH
+
+
+def markdown_to_html_node(markdown: str) -> HTMLNode:
+    # Assumptions
+    # - no nested blocks
+    # - max one layer of inline under blocks
+    # Tree: Parent div -> markdown blocks -> markdown inline
+    def get_node(block):
+        block_type = block_to_block_type(block)
+        block = block.replace("\n", " ")
+        match block_type:
+            case BlockType.PARAGRAPH:
+                children_text_nodes = text_to_textnodes(block)
+                children = [text_node_to_html_node(ctn) for ctn in children_text_nodes]
+                return ParentNode("p", children)
+            case BlockType.HEADING:
+                count = len(block) - len(block.lstrip('#'))
+                children_text_nodes = text_to_textnodes(block.lstrip("#").strip())
+                children = [text_node_to_html_node(ctn) for ctn in children_text_nodes]
+                return ParentNode(f"h{count}", children)
+        raise Exception("Did not handle all block types")
+
+    children = []
+    blocks = markdown_to_blocks(markdown)
+    for block in blocks:
+        children.append(get_node(block))
+    return ParentNode("div", children)
 
 
 def extract_markdown_images(text):
